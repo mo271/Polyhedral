@@ -106,6 +106,32 @@ lemma positive_eq_hull_preimage_singleton (f : M →ₗ[R] R) (c : R) (hc : c �
     f.positive = PointedCone.hull R (f ⁻¹' {c}) := by
   sorry
 
+/-- The statement `positive_eq_hull_preimage_singleton` above is **false**: it fails for `c < 0`
+(the hull of the level set `{f = -1}` lies on the *negative* side of `f`), and it independently
+fails over semirings without division (over `ℕ` with `f = id` and `c = 2` the hull is `2ℕ` while
+the positive cone is `ℕ`). A correct version requires `0 < c` and a `DivisionRing`.
+
+Below, the statement (with its section variables universally quantified) is refuted over `ℚ`
+with `f = id` and `c = -1`. -/
+theorem positive_eq_hull_preimage_singleton.disproof :
+    (∀ {R : Type} [Semiring R] [PartialOrder R] [IsStrictOrderedRing R]
+        {M : Type} [AddCommMonoid M] [Module R M] (f : M →ₗ[R] R) (c : R), c ≠ 0 →
+        f.positive = PointedCone.hull R (f ⁻¹' {c})) → False := by
+  intro h
+  -- `1` is in the positive cone of `id : ℚ →ₗ[ℚ] ℚ` ...
+  have h1 : (1 : ℚ) ∈ (LinearMap.id : ℚ →ₗ[ℚ] ℚ).positive :=
+    LinearMap.mem_positive.mpr fun _ => one_pos
+  rw [h LinearMap.id (-1) (by norm_num)] at h1
+  -- ... but the hull of the level set `{id = -1}` consists of nonpositive numbers only.
+  have h2 : PointedCone.hull ℚ ((LinearMap.id : ℚ →ₗ[ℚ] ℚ) ⁻¹' {-1})
+      ≤ (-LinearMap.id : ℚ →ₗ[ℚ] ℚ).nonneg := by
+    refine Submodule.span_le.mpr fun x hx => ?_
+    simp only [Set.mem_preimage, LinearMap.id_coe, id_eq, Set.mem_singleton_iff] at hx
+    simp [hx]
+  have h3 := h2 h1
+  simp [LinearMap.mem_nonneg] at h3
+  linarith
+
 lemma hull_le_positive_of_subset_preimage_singleton {f : M →ₗ[R] R} {s : Set M} {c : R}
     (hc : c ≠ 0) (hs : s ⊆ f ⁻¹' {c}) :
     PointedCone.hull R s ≤ f.positive := by
